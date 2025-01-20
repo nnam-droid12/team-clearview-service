@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgresql-contract-docker
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: contract_docker_db
+    ports:
+      - "5432:5432"
+    networks:
+      - contract-network
+
+  redis:
+    image: redis:latest
+    container_name: redis-contract-docker
+    ports:
+      - "6379:6379"
+    networks:
+      - contract-network
+
+  app:
+    image: techwiz1990/contract-image:latest
+    container_name: contract-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5050:5050"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/contract_docker_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - app-storage:/app/storage
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - contract-network
+
+networks:
+  contract-network:
+    driver: bridge
+
+volumes:
+  app-storage:

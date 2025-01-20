@@ -1,10 +1,9 @@
 spring:
   datasource:
-    username: postgres
-    password: 1234
-    url: jdbc:postgresql://postgres:5432/contract_db
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL}
     driver-class-name: org.postgresql.Driver
-
 
   jpa:
     hibernate:
@@ -14,7 +13,30 @@ spring:
       hibernate:
         format_sql: true
 
-
   data:
-   mongodb:
-     uri: mongodb://localhost:27017/contract_db
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI}
+
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+  cache:
+    type: redis
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: techandrewwilliam@gmail.com
+    password: kxrd hizk yfry meiy
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  key: ${JWT_KEY}
+
+server:
+  port: 5050

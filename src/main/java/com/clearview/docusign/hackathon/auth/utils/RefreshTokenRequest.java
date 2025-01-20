@@ -1,12 +1,14 @@
 package com.clearview.docusign.hackathon.auth.utils;
 
-
 public class RefreshTokenRequest {
 
     private String refreshToken;
 
     RefreshTokenRequest(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    public RefreshTokenRequest() {
     }
 
     public static RefreshTokenRequestBuilder builder() {
