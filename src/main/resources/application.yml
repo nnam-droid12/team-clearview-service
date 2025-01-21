@@ -1,8 +1,8 @@
 spring:
   datasource:
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:1234}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/contract_db}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -15,11 +15,11 @@ spring:
 
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI}
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/contract_db}
 
   redis:
-    host: ${REDIS_HOST}
-    port: ${REDIS_PORT}
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
   cache:
     type: redis
 
@@ -34,6 +34,17 @@ spring:
           auth: true
           starttls:
             enable: true
+
+
+docusign:
+  private-key: ${DOCUSIGN_PRIVATE_KEY}
+  integration-key: ${DOCUSIGN_INTEGRATION_KEY}
+  user-id: ${DOCUSIGN_USER_ID}
+  account-id: ${DOCUSIGN_ACCOUNT_ID}
+  auth-server: ${DOCUSIGN_AUTH_SERVER}
+
+
+
 
 jwt:
   key: ${JWT_KEY}
