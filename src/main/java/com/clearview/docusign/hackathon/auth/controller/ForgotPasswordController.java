@@ -94,9 +94,9 @@ public class ForgotPasswordController {
         return ResponseEntity.ok("Password changed successfully");
     }
 
-    private Integer otpGenerator(){
+    private Integer otpGenerator() {
         Random random = new Random();
-        return random.nextInt(100_100, 999_999);
+        return 100_000 + random.nextInt(900_000);
     }
 }
 

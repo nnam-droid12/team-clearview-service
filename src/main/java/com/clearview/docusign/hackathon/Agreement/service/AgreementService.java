@@ -2,20 +2,32 @@ package com.clearview.docusign.hackathon.Agreement.service;
 
 import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
 import com.clearview.docusign.hackathon.Agreement.repository.AgreementRepository;
+import com.docusign.esign.api.EnvelopesApi;
+import com.docusign.esign.model.*;
+import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.*;
+import java.util.List;
 
 @Service
 @Transactional
 public class AgreementService {
 
     private final AgreementRepository agreementRepository;
+
+    @Value("${docusign.account-id}")
+    private String accountId;
+
+    @Value("${docusign.auth-server}")
+    private String authServer;
 
     public AgreementService(AgreementRepository agreementRepository) {
         this.agreementRepository = agreementRepository;
@@ -49,6 +61,7 @@ public class AgreementService {
     }
 
     public Page<Agreement> getAllAgreements(Pageable pageable) {
+
         return agreementRepository.findAll(pageable);
     }
 
@@ -77,6 +90,23 @@ public class AgreementService {
     }
 
     public void deleteAgreement(Long agreementId) {
+
         agreementRepository.deleteById(agreementId);
     }
+
+    public Agreement findByEnvelopeIdAndUpdateStatus(String envelopeId, String status, LocalDateTime signedDate) {
+        Agreement agreement = agreementRepository.findMostRecentByDocuSignEnvelopeId(envelopeId)
+                .orElseThrow(() -> new RuntimeException("Agreement not found for envelope: " + envelopeId));
+
+        agreement.setStatus(status);
+        if (signedDate != null) {
+            agreement.setSignedDate(signedDate);
+        }
+
+        return agreementRepository.save(agreement);
+    }
+
+
+
+
 }

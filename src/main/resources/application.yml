@@ -45,6 +45,10 @@ docusign:
 
 
 
+google:
+  credentials:
+    path: credentials.json
+
 
 jwt:
   key: ${JWT_KEY}

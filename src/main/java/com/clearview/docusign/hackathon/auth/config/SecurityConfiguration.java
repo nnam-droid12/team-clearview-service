@@ -39,6 +39,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/**",  "/api/v1/forgot-password/**", "/file/**").permitAll()
                         .requestMatchers("/callback").permitAll()
                         .requestMatchers("/api/documents/**", "/api/webhook/**", "/api/agreements/**").authenticated()
+                        .requestMatchers("/api/navigator/**").authenticated()
                 ).sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)

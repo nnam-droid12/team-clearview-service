@@ -15,7 +15,7 @@ public class OAuthController {
             return "Error: " + error;
         }
         if (code != null) {
-            // Process the authorization code and exchange it for a token
+
             return "Authorization code received: " + code;
         }
         return "No authorization code received.";

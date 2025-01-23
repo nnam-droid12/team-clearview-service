@@ -41,45 +41,35 @@ public class DocuSignConfig {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-//    @PostConstruct
-//    public void initFile() throws IOException {
-//
-//        if (privateKey == null || privateKey.trim().isEmpty()) {
-//            Resource resource = new ClassPathResource("docusign-private-key.txt");
-//            privateKey = new String(Files.readAllBytes(resource.getFile().toPath()));
-//        }
-//    }
 
     @Bean
     public ApiClient apiClient() throws Exception {
         ApiClient apiClient = new ApiClient();
 
-        // Check if you're using the correct base path for auth-server (production or demo)
         apiClient.setBasePath("https://" + authServer);
 
         try {
-            // Ensure that scopes and privateKey are set properly
-            String cleanedPrivateKey = privateKey.trim();  // Clean the private key string
 
-            // Prepare OAuth token request parameters
+            String cleanedPrivateKey = privateKey.trim();
+
             java.util.List<String> scopes = Arrays.asList(
                     OAuth.Scope_SIGNATURE,
                     OAuth.Scope_IMPERSONATION
             );
 
-            // Request the access token with JWT
+
             OAuth.OAuthToken oAuthToken = apiClient.requestJWTUserToken(
-                    integrationKey,  // Integration key (Client ID)
-                    userId,          // User ID
-                    scopes,          // Scopes
-                    cleanedPrivateKey.getBytes(),  // Private Key as bytes
-                    3600  // Token validity in seconds
+                    integrationKey,
+                    userId,
+                    scopes,
+                    cleanedPrivateKey.getBytes(),
+                    3600
             );
 
-            // Log the token received for debugging purposes
+
             log.debug("Received JWT Access Token: " + oAuthToken.getAccessToken());
 
-            // Set access token
+
             apiClient.setAccessToken(oAuthToken.getAccessToken(), oAuthToken.getExpiresIn());
 
             return apiClient;

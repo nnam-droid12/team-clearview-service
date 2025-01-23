@@ -37,7 +37,7 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        // Create ObjectMapper with type handling
+
         ObjectMapper mapper = new ObjectMapper();
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         BasicPolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
@@ -45,7 +45,7 @@ public class RedisConfig {
                 .build();
         mapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL);
 
-        // Use GenericJackson2JsonRedisSerializer instead of Jackson2JsonRedisSerializer
+
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(mapper);
 
         template.setValueSerializer(serializer);

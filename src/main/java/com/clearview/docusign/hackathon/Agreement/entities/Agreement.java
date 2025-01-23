@@ -17,6 +17,8 @@ public class Agreement {
 
     private String docuSignEnvelopeId;
 
+    private String title;
+
     private String status;
 
     private LocalDateTime signedDate;
@@ -27,9 +29,11 @@ public class Agreement {
     @OneToMany(mappedBy = "agreement", cascade = CascadeType.ALL)
     private List<Obligation> obligations = new ArrayList<>();
 
-    public Agreement(Long agreementId, String docuSignEnvelopeId, String status, LocalDateTime signedDate, List<Milestone> milestones, List<Obligation> obligations) {
+
+    public Agreement(Long agreementId, String docuSignEnvelopeId, String title, String status, LocalDateTime signedDate, List<Milestone> milestones, List<Obligation> obligations) {
         this.agreementId = agreementId;
         this.docuSignEnvelopeId = docuSignEnvelopeId;
+        this.title = title;
         this.status = status;
         this.signedDate = signedDate;
         this.milestones = milestones;
@@ -49,6 +53,10 @@ public class Agreement {
 
     public String getDocuSignEnvelopeId() {
         return this.docuSignEnvelopeId;
+    }
+
+    public String getTitle() {
+        return this.title;
     }
 
     public String getStatus() {
@@ -73,6 +81,10 @@ public class Agreement {
 
     public void setDocuSignEnvelopeId(String docuSignEnvelopeId) {
         this.docuSignEnvelopeId = docuSignEnvelopeId;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public void setStatus(String status) {
@@ -104,6 +116,9 @@ public class Agreement {
         final Object other$docuSignEnvelopeId = other.getDocuSignEnvelopeId();
         if (this$docuSignEnvelopeId == null ? other$docuSignEnvelopeId != null : !this$docuSignEnvelopeId.equals(other$docuSignEnvelopeId))
             return false;
+        final Object this$title = this.getTitle();
+        final Object other$title = other.getTitle();
+        if (this$title == null ? other$title != null : !this$title.equals(other$title)) return false;
         final Object this$status = this.getStatus();
         final Object other$status = other.getStatus();
         if (this$status == null ? other$status != null : !this$status.equals(other$status)) return false;
@@ -133,6 +148,8 @@ public class Agreement {
         result = result * PRIME + ($agreementId == null ? 43 : $agreementId.hashCode());
         final Object $docuSignEnvelopeId = this.getDocuSignEnvelopeId();
         result = result * PRIME + ($docuSignEnvelopeId == null ? 43 : $docuSignEnvelopeId.hashCode());
+        final Object $title = this.getTitle();
+        result = result * PRIME + ($title == null ? 43 : $title.hashCode());
         final Object $status = this.getStatus();
         result = result * PRIME + ($status == null ? 43 : $status.hashCode());
         final Object $signedDate = this.getSignedDate();
@@ -145,12 +162,13 @@ public class Agreement {
     }
 
     public String toString() {
-        return "Agreement(agreementId=" + this.getAgreementId() + ", docuSignEnvelopeId=" + this.getDocuSignEnvelopeId() + ", status=" + this.getStatus() + ", signedDate=" + this.getSignedDate() + ", milestones=" + this.getMilestones() + ", obligations=" + this.getObligations() + ")";
+        return "Agreement(agreementId=" + this.getAgreementId() + ", docuSignEnvelopeId=" + this.getDocuSignEnvelopeId() + ", title=" + this.getTitle() + ", status=" + this.getStatus() + ", signedDate=" + this.getSignedDate() + ", milestones=" + this.getMilestones() + ", obligations=" + this.getObligations() + ")";
     }
 
     public static class AgreementBuilder {
         private Long agreementId;
         private String docuSignEnvelopeId;
+        private String title;
         private String status;
         private LocalDateTime signedDate;
         private List<Milestone> milestones;
@@ -166,6 +184,11 @@ public class Agreement {
 
         public AgreementBuilder docuSignEnvelopeId(String docuSignEnvelopeId) {
             this.docuSignEnvelopeId = docuSignEnvelopeId;
+            return this;
+        }
+
+        public AgreementBuilder title(String title) {
+            this.title = title;
             return this;
         }
 
@@ -190,11 +213,11 @@ public class Agreement {
         }
 
         public Agreement build() {
-            return new Agreement(this.agreementId, this.docuSignEnvelopeId, this.status, this.signedDate, this.milestones, this.obligations);
+            return new Agreement(this.agreementId, this.docuSignEnvelopeId, this.title, this.status, this.signedDate, this.milestones, this.obligations);
         }
 
         public String toString() {
-            return "Agreement.AgreementBuilder(agreementId=" + this.agreementId + ", docuSignEnvelopeId=" + this.docuSignEnvelopeId + ", status=" + this.status + ", signedDate=" + this.signedDate + ", milestones=" + this.milestones + ", obligations=" + this.obligations + ")";
+            return "Agreement.AgreementBuilder(agreementId=" + this.agreementId + ", docuSignEnvelopeId=" + this.docuSignEnvelopeId + ", title=" + this.title + ", status=" + this.status + ", signedDate=" + this.signedDate + ", milestones=" + this.milestones + ", obligations=" + this.obligations + ")";
         }
     }
 }
