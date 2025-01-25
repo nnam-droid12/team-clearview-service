@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/agreements")
+@RequestMapping("/api/v1/agreements")
 public class AgreementController {
 
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(DocuSignConfig.class);

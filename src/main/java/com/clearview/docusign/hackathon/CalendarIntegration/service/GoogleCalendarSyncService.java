@@ -2,12 +2,16 @@ package com.clearview.docusign.hackathon.CalendarIntegration.service;
 
 import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
 import com.clearview.docusign.hackathon.Agreement.repository.AgreementRepository;
+import com.clearview.docusign.hackathon.CalendarIntegration.controller.GoogleCalendarSyncController;
+import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
+import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.DateTime;
@@ -15,70 +19,108 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
+
 import java.security.GeneralSecurityException;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class GoogleCalendarSyncService {
+
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(GoogleCalendarSyncService.class);
-    private final GoogleCredential googleCredential;
+
     private final AgreementRepository agreementRepository;
+    private final AuthorizationCodeFlow authorizationCodeFlow;
+    private final String userId;
     private final Calendar calendarService;
 
     public GoogleCalendarSyncService(
             AgreementRepository agreementRepository,
-            @Value("${google.calendar.primary-calendar-id:primary}") String primaryCalendarId, GoogleCredential googleCredential
-    ) throws IOException, GeneralSecurityException {
+            AuthorizationCodeFlow authorizationCodeFlow,
+            @Value("${google.calendar.user-id}") String userId,
+            @Autowired(required = false) Calendar calendarService
+    ) {
         this.agreementRepository = agreementRepository;
-        this.googleCredential = googleCredential;
-
-
-        HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-        this.calendarService = new Calendar.Builder(
-                httpTransport,
-                jsonFactory,
-                googleCredential
-        ).setApplicationName("Agreement Management System").build();
+        this.authorizationCodeFlow = authorizationCodeFlow;
+        this.userId = userId;
+        this.calendarService = calendarService;
     }
 
+    private Calendar getCalendarService() throws Exception {
+        try {
+            Credential credential = authorizationCodeFlow.loadCredential(userId);
+
+            if (credential == null) {
+                log.error("CRITICAL: No credential found for user: {}", userId);
+                throw new IllegalStateException("No credentials available for user: " + userId);
+            }
+
+            // Log credential details for debugging
+            log.info("Credential details:");
+            log.info("Access Token: {}", credential.getAccessToken());
+            log.info("Refresh Token: {}", credential.getRefreshToken());
+            log.info("Token Expiration: {}", credential.getExpirationTimeMilliseconds());
+
+            // Attempt token refresh if needed
+            if (credential.getAccessToken() == null || credential.getExpirationTimeMilliseconds() <= 60) {
+                log.info("Attempting to refresh token...");
+                credential.refreshToken();
+            }
+
+            return new Calendar.Builder(
+                    GoogleNetHttpTransport.newTrustedTransport(),
+                    GsonFactory.getDefaultInstance(),
+                    credential
+            ).setApplicationName("Agreement Management System").build();
+        } catch (Exception e) {
+            log.error("Calendar Service Initialization Failure", e);
+            throw new IllegalStateException("Failed to initialize calendar service: " + e.getMessage(), e);
+        }
+    }
 
     public void syncAgreementToGoogleCalendar(Long agreementId) throws IOException {
+        try {
+            log.error("Starting sync for Agreement ID: {}", agreementId);
 
-        Agreement agreement = agreementRepository.findById(agreementId)
-                .orElseThrow(() -> new RuntimeException("Agreement not found"));
+            Calendar calendar = getCalendarService();
+
+            Agreement agreement = agreementRepository.findByIdWithMilestones(agreementId)
+                    .orElseThrow(() -> new RuntimeException("Agreement not found"));
+
+            BatchRequest batch = calendar.batch();
+
+            List<Event> milestoneEvents = createMilestoneEvents(agreement);
+            log.error("Milestone Events count: {}", milestoneEvents.size());
+
+            insertEventsIntoBatch(batch, milestoneEvents);
 
 
-        BatchRequest batch = calendarService.batch();
+        } catch (Exception e) {
+            log.error("Detailed sync error:", e);
+            log.error("Exception class: {}", e.getClass().getName());
+            log.error("Exception message: {}", e.getMessage());
 
+            if (e.getCause() != null) {
+                log.error("Cause class: {}", e.getCause().getClass().getName());
+                log.error("Cause message: {}", e.getCause().getMessage());
+            }
 
-        List<Event> milestoneEvents = createMilestoneEvents(agreement);
-        insertEventsIntoBatch(batch, milestoneEvents);
-
-
-        List<Event> obligationEvents = createObligationEvents(agreement);
-        insertEventsIntoBatch(batch, obligationEvents);
-
-
-        Event agreementEvent = createAgreementContractEvent(agreement);
-        if (agreementEvent != null) {
-            insertEventsIntoBatch(batch, List.of(agreementEvent));
+            throw new IOException("Failed to sync agreement to Google Calendar", e);
         }
-
-
-        batch.execute();
-
-        log.info("Synced events for Agreement ID {} to Google Calendar", agreementId);
     }
 
-
     private List<Event> createMilestoneEvents(Agreement agreement) {
+        log.error("Agreement ID: {}", agreement.getAgreementId());
+        log.error("Milestones count: {}", agreement.getMilestones().size());
+
         return agreement.getMilestones().stream()
                 .filter(milestone -> milestone.getDueDate() != null)
                 .map(milestone -> {
@@ -89,12 +131,10 @@ public class GoogleCalendarSyncService {
                                             "Status: " + milestone.getStatus()
                             );
 
-
                     DateTime startDateTime = new DateTime(milestone.getDueDate().toInstant(ZoneOffset.UTC).toEpochMilli());
                     EventDateTime start = new EventDateTime()
                             .setDateTime(startDateTime)
                             .setTimeZone("UTC");
-
 
                     DateTime endDateTime = new DateTime(
                             milestone.getDueDate().plusHours(1).toInstant(ZoneOffset.UTC).toEpochMilli()
@@ -111,6 +151,7 @@ public class GoogleCalendarSyncService {
                 })
                 .collect(Collectors.toList());
     }
+
 
 
     private List<Event> createObligationEvents(Agreement agreement) {

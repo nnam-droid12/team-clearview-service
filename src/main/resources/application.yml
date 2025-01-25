@@ -45,13 +45,28 @@ docusign:
 
 
 
+
+
 google:
   credentials:
+    token-store-path: /app/tokens
     path: credentials.json
-
+  oauth:
+    redirectUri: https://contract-image-latest.onrender.com/api/v1/googleOauth/google-callback
+  calendar:
+    user-id: williamekene700@gmail.com
 
 jwt:
   key: ${JWT_KEY}
 
 server:
   port: 5050
+
+
+AWS:
+  REGION: eu-north-1
+  ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+  S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
+
+

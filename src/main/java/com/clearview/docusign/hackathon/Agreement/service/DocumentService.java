@@ -8,14 +8,13 @@ import com.clearview.docusign.hackathon.Obligation.entities.Obligation;
 import com.clearview.docusign.hackathon.Obligation.repository.ObligationRepository;
 import com.docusign.esign.api.EnvelopesApi;
 import com.docusign.esign.client.ApiClient;
-import com.docusign.esign.client.ApiException;
 import com.docusign.esign.model.*;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.util.Base64;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.List;

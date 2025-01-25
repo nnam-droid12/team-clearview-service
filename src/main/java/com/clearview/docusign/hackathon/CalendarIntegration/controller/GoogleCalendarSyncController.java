@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/agreements/calendar")
+@RequestMapping("/api/v1/agreements/calendar")
 public class GoogleCalendarSyncController {
 
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(GoogleCalendarSyncController.class);

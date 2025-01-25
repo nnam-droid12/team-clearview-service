@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 
@@ -18,6 +20,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import java.security.Security;
+import java.util.List;
 
 @Configuration
 public class DocuSignConfig {
@@ -44,20 +47,17 @@ public class DocuSignConfig {
 
     @Bean
     public ApiClient apiClient() throws Exception {
-        ApiClient apiClient = new ApiClient();
-
-        apiClient.setBasePath("https://" + authServer);
+        ApiClient apiClient = new ApiClient("https://" + authServer);
 
         try {
-
             String cleanedPrivateKey = privateKey.trim();
 
-            java.util.List<String> scopes = Arrays.asList(
+            List<String> scopes = Arrays.asList(
                     OAuth.Scope_SIGNATURE,
                     OAuth.Scope_IMPERSONATION
             );
 
-
+            // Use generateAccessToken if you have an authorization code
             OAuth.OAuthToken oAuthToken = apiClient.requestJWTUserToken(
                     integrationKey,
                     userId,
@@ -66,17 +66,15 @@ public class DocuSignConfig {
                     3600
             );
 
-
-            log.debug("Received JWT Access Token: " + oAuthToken.getAccessToken());
-
-
             apiClient.setAccessToken(oAuthToken.getAccessToken(), oAuthToken.getExpiresIn());
-
             return apiClient;
         } catch (Exception e) {
-            log.error("Error while creating DocuSign ApiClient: ", e);
-            throw new Exception("DocuSign authentication failed", e);
+            log.error("DocuSign authentication failed", e);
+            throw new RuntimeException("DocuSign authentication failed", e);
         }
     }
 
+
 }
+
+

@@ -1,6 +1,7 @@
 package com.clearview.docusign.hackathon.NavigatorAgreement.controller;
 
 
+import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
 import com.clearview.docusign.hackathon.NavigatorAgreement.service.NavigatorApiService;
 import com.clearview.docusign.hackathon.NavigatorAgreement.utils.AgreementsList;
 import com.clearview.docusign.hackathon.NavigatorAgreement.utils.NavigatorAgreement;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/navigator")
+@RequestMapping("/api/v1/navigator")
 public class NavigatorApiController {
 
 
@@ -24,9 +25,9 @@ public class NavigatorApiController {
     }
 
     @GetMapping("/agreements-navigator/{agreementId}")
-    public ResponseEntity<NavigatorAgreement> getAgreement(@PathVariable String agreementId) {
+    public ResponseEntity<Agreement> getAgreement(@PathVariable String agreementId) {
         try {
-            NavigatorAgreement agreement = navigatorApiService.getAgreement(agreementId);
+            Agreement agreement = navigatorApiService.getAgreement(agreementId);
             return ResponseEntity.ok(agreement);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

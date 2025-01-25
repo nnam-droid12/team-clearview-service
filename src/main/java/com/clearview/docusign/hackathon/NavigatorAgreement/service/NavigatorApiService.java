@@ -1,5 +1,6 @@
 package com.clearview.docusign.hackathon.NavigatorAgreement.service;
 
+import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
 import com.clearview.docusign.hackathon.NavigatorAgreement.utils.AgreementsList;
 import com.clearview.docusign.hackathon.NavigatorAgreement.utils.NavigatorAgreement;
 import com.docusign.esign.client.ApiClient;
@@ -15,7 +16,7 @@ public class NavigatorApiService {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(NavigatorApiService.class);
     private final String accountId;
     private final ApiClient apiClient;
-    private static final String NAVIGATOR_BASE_URL = "https://navigator.docusign.net/v1";
+    private static final String NAVIGATOR_BASE_URL = "https://api-d.docusign.com/v1";
 
     public NavigatorApiService(
             ApiClient apiClient,
@@ -24,30 +25,30 @@ public class NavigatorApiService {
         this.accountId = accountId;
     }
 
-    public NavigatorAgreement getAgreement(String agreementId) throws Exception {
+    public Agreement getAgreement(String agreementId) throws Exception {
         try {
             String accessToken = apiClient.getAccessToken();
 
+            RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(accessToken);
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Accept", "application/json");
 
             String url = String.format("%s/accounts/%s/agreements/%s",
                     NAVIGATOR_BASE_URL, accountId, agreementId);
 
             HttpEntity<?> entity = new HttpEntity<>(headers);
-            RestTemplate restTemplate = new RestTemplate();
 
-            ResponseEntity<NavigatorAgreement> response = restTemplate.exchange(
+            ResponseEntity<Agreement> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     entity,
-                    NavigatorAgreement.class
+                    Agreement.class
             );
 
             return response.getBody();
         } catch (Exception e) {
-            log.error("Error fetching agreement details: {}", e.getMessage());
+            log.error("Error fetching agreement details", e);
             throw new RuntimeException("Failed to fetch agreement details", e);
         }
     }

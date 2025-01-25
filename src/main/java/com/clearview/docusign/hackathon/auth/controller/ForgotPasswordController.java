@@ -55,7 +55,7 @@ public class ForgotPasswordController {
         ForgotPassword fp = ForgotPassword.builder()
                 .otp(otp)
                 .user(user)
-                .expirationTime(new Date(System.currentTimeMillis() + 7 * 10000))
+                .expirationTime(new Date(System.currentTimeMillis() + 2 * 60* 10000))
                 .build();
         emailService.sendMessage(mailBody);
         forgotPasswordRepository.save(fp);
@@ -98,6 +98,7 @@ public class ForgotPasswordController {
         Random random = new Random();
         return 100_000 + random.nextInt(900_000);
     }
+
 }
 
 
