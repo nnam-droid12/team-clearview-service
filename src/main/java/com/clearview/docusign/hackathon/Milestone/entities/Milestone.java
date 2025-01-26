@@ -1,6 +1,7 @@
 package com.clearview.docusign.hackathon.Milestone.entities;
 
 import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class Milestone {
 
     @ManyToOne
     @JoinColumn(name = "agreement_id")
+    @JsonBackReference
     private Agreement agreement;
 
     public Milestone(Long milestoneId, String title, String description, LocalDateTime dueDate, String status, Agreement agreement) {

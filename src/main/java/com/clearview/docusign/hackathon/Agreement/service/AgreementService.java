@@ -2,20 +2,17 @@ package com.clearview.docusign.hackathon.Agreement.service;
 
 import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
 import com.clearview.docusign.hackathon.Agreement.repository.AgreementRepository;
-import com.docusign.esign.api.EnvelopesApi;
-import com.docusign.esign.model.*;
-import org.apache.commons.codec.binary.Base64;
+
+import com.clearview.docusign.hackathon.Milestone.entities.Milestone;
+import com.clearview.docusign.hackathon.Obligation.entities.Obligation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.List;
+
 
 @Service
 @Transactional
@@ -34,6 +31,13 @@ public class AgreementService {
     }
 
     public Agreement createAgreement(Agreement agreement) {
+        for (Milestone milestone : agreement.getMilestones()) {
+            milestone.setAgreement(agreement);
+        }
+        for (Obligation obligation : agreement.getObligations()) {
+            obligation.setAgreement(agreement);
+        }
+
         agreement.setStatus("DRAFT");
         return agreementRepository.save(agreement);
     }

@@ -2,6 +2,7 @@ package com.clearview.docusign.hackathon.Agreement.entities;
 
 import com.clearview.docusign.hackathon.Milestone.entities.Milestone;
 import com.clearview.docusign.hackathon.Obligation.entities.Obligation;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -23,10 +24,12 @@ public class Agreement {
 
     private LocalDateTime signedDate;
 
-    @OneToMany(mappedBy = "agreement", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "agreement", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference
     private List<Milestone> milestones = new ArrayList<>();
 
-    @OneToMany(mappedBy = "agreement", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "agreement", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference
     private List<Obligation> obligations = new ArrayList<>();
 
 

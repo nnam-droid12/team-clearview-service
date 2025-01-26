@@ -1,6 +1,7 @@
 package com.clearview.docusign.hackathon.Obligation.entities;
 
 import com.clearview.docusign.hackathon.Agreement.entities.Agreement;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ public class Obligation {
 
     @ManyToOne
     @JoinColumn(name = "agreement_id")
+    @JsonBackReference
     private Agreement agreement;
 
     public Obligation(Long obligationId, String description, LocalDateTime dueDate, String assignedTo, String status, Agreement agreement) {
