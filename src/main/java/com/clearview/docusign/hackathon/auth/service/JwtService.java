@@ -107,7 +107,7 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    // get expiration date from token
+
     private Date extractExpiration(String token) {
 
         return extractClaim(token, Claims::getExpiration);

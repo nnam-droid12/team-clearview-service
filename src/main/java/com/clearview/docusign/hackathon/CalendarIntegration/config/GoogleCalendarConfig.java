@@ -102,12 +102,12 @@ public class GoogleCalendarConfig {
         @Override
         public V get(String key) {
             try {
-                // First check in-memory store
+
                 if (inMemoryStore.containsKey(key)) {
                     return inMemoryStore.get(key);
                 }
 
-                // Then try S3
+
                 GetObjectRequest request = GetObjectRequest.builder()
                         .bucket(s3BucketName)
                         .key(id + "/" + key)
@@ -116,7 +116,6 @@ public class GoogleCalendarConfig {
                 byte[] data = s3Client.getObjectAsBytes(request).asByteArray();
                 V value = deserialize(data);
 
-                // Cache in memory
                 inMemoryStore.put(key, value);
                 return value;
             } catch (Exception e) {
@@ -128,10 +127,10 @@ public class GoogleCalendarConfig {
         @Override
         public DataStore<V> set(String key, V value) {
             try {
-                // Update in-memory store
+
                 inMemoryStore.put(key, value);
 
-                // Store in S3
+
                 PutObjectRequest request = PutObjectRequest.builder()
                         .bucket(s3BucketName)
                         .key(id + "/" + key)
@@ -145,7 +144,6 @@ public class GoogleCalendarConfig {
             }
         }
 
-        // Other methods with minimal implementation
         @Override
         public int size() { return inMemoryStore.size(); }
         @Override

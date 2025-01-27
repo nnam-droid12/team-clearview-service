@@ -1,8 +1,12 @@
 package com.clearview.docusign.hackathon.Agreement.controller;
 
+import com.clearview.docusign.hackathon.Agreement.service.DocumentService;
+import com.clearview.docusign.hackathon.auth.config.DocuSignConfig;
 import com.docusign.esign.client.ApiClient;
 import com.docusign.esign.client.ApiException;
 import com.docusign.esign.client.auth.OAuth;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,15 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/docusign")
 public class OAuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(OAuthController.class);
 
     @Value("${docusign.integration-key}")
     private String integrationKey;
@@ -27,79 +30,65 @@ public class OAuthController {
     @Value("${docusign.private-key}")
     private String privateKey;
 
-    private static final List<String> SCOPES = Arrays.asList(
-            OAuth.Scope_SIGNATURE,
-            OAuth.Scope_IMPERSONATION,
-            "https://api.docusign.com/v1",
-            "adm_store_unified_repo_read"
-    );
+    @Value("${docusign.user-id}")
+    private String userId;
+
+    private String accessToken;
+    private long tokenExpiresAt;
 
     @GetMapping("/consent-url")
-    public String generateConsentUrl() {
-        String baseUrl = "https://account-d.docusign.com/oauth/auth";
-        String redirectUri = "https://contract-image-latest.onrender.com/api/v1/docusign/callback";
-
-        String scopeString = String.join(" ",
-                OAuth.Scope_SIGNATURE,
-                OAuth.Scope_IMPERSONATION,
-                "https://api.docusign.com/v1",
-                "adm_store_unified_repo_read"
+    public ResponseEntity<Map<String, String>> generateConsentUrl() {
+        String consentUrl = String.format(
+                "https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%%20impersonation%%20adm_store_unified_repo_read&client_id=%s&redirect_uri=https://contract-image-latest.onrender.com/api/v1/docusign/callback",
+                integrationKey
         );
 
-        return String.format("%s?response_type=code&scope=%s&client_id=%s&redirect_uri=%s",
-                baseUrl,
-                scopeString,
-                integrationKey,
-                redirectUri
-        );
+        Map<String, String> response = new HashMap<>();
+        response.put("consent_url", consentUrl);
+        return ResponseEntity.ok(response);
     }
-
 
     @GetMapping("/callback")
-    public ResponseEntity<String> handleCallback(
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String state,
-            @RequestParam(required = false) String error) {
+    public ResponseEntity<String> handleCallback(@RequestParam String code) {
+        try {
+            ApiClient apiClient = new ApiClient(ApiClient.DEMO_REST_BASEPATH);
+            List<String> scopes = Arrays.asList(
+                    OAuth.Scope_SIGNATURE,
+                    OAuth.Scope_IMPERSONATION,
+                    "adm_store_unified_repo_read"
+            );
 
-        if (error != null) {
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(createResponsePage("Authorization Failed", "There was an error during authorization: " + error));
+            OAuth.OAuthToken oAuthToken = apiClient.requestJWTUserToken(
+                    integrationKey,
+                    userId,
+                    scopes,
+                    privateKey.getBytes(StandardCharsets.UTF_8),
+                    3600
+            );
+
+            OAuth.UserInfo userInfo = apiClient.getUserInfo(oAuthToken.getAccessToken());
+            return ResponseEntity.ok("Authentication successful");
+        } catch (Exception e) {
+            log.error("Token exchange failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-
-        if (code != null) {
-            try {
-                // Exchange authorization code for access token
-                ApiClient apiClient = new ApiClient("https://account-d.docusign.com");
-                OAuth.OAuthToken token = apiClient.generateAccessToken(
-                        integrationKey,
-                        new String(privateKey.getBytes(), StandardCharsets.UTF_8),
-                        code
-                );
-
-                return ResponseEntity.status(HttpStatus.OK)
-                        .body(createResponsePage("Access Granted", "You can now close this page. Authorization was successful."));
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.OK)
-                        .body(createResponsePage("Authorization Failed", "Token exchange failed: " + e.getMessage()));
-            }
-        }
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(createResponsePage("No Authorization", "No authorization code received."));
     }
 
-    private String createResponsePage(String title, String message) {
+
+
+    public String getAccessToken() {
+        return this.accessToken;
+    }
+
+
+    private String createThankYouPage(String title, String message) {
         return "<!DOCTYPE html>" +
-                "<html><head>" +
-                "<title>" + title + "</title>" +
-                "<style>" +
-                "body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }" +
-                "</style>" +
+                "<html><head><title>" + title + "</title>" +
+                "<style>body{font-family:Arial,sans-serif;text-align:center;padding-top:50px;}</style>" +
                 "</head><body>" +
                 "<h1>" + title + "</h1>" +
                 "<p>" + message + "</p>" +
-                "<p>You can now close this page.</p>" +
+                "<p>You can now close this window.</p>" +
                 "</body></html>";
     }
-
 }

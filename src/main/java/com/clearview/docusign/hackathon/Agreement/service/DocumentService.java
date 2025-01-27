@@ -27,33 +27,36 @@ public class DocumentService {
     private final AgreementRepository agreementRepository;
     private final MilestoneRepository milestoneRepository;
     private final ObligationRepository obligationRepository;
+    private final TokenService tokenService;
 
     private final ApiClient apiClient;
 
     @Value("${docusign.account-id}")
     private String accountId;
 
-    public DocumentService(AgreementRepository agreementRepository, MilestoneRepository milestoneRepository, ObligationRepository obligationRepository, ApiClient apiClient) {
+    public DocumentService(AgreementRepository agreementRepository, MilestoneRepository milestoneRepository, ObligationRepository obligationRepository, TokenService tokenService, ApiClient apiClient) {
         this.agreementRepository = agreementRepository;
         this.milestoneRepository = milestoneRepository;
         this.obligationRepository = obligationRepository;
+        this.tokenService = tokenService;
         this.apiClient = apiClient;
     }
 
     public Agreement uploadAndInitiateSigningProcess(MultipartFile file, List<String> signerEmails) throws Exception {
-        // Create envelope definition
+
+        String accessToken = tokenService.getAccessToken();
+        apiClient.addDefaultHeader("Authorization", "Bearer " + accessToken);
+
         EnvelopeDefinition envelopeDefinition = new EnvelopeDefinition();
         envelopeDefinition.setEmailSubject("Please sign this document");
         envelopeDefinition.setEmailBlurb("Please review and sign this document");
 
-        // Prepare document
         Document document = new Document();
         document.setDocumentBase64(Base64.getEncoder().encodeToString(file.getBytes()));
         document.setName(file.getOriginalFilename());
         document.setFileExtension(getFileExtension(file.getOriginalFilename()));
         document.setDocumentId("1");
 
-        // Create signers list
         List<Signer> signerList = new ArrayList<>();
         for (int i = 0; i < signerEmails.size(); i++) {
             Signer signer = new Signer();
@@ -61,11 +64,9 @@ public class DocumentService {
             signer.setName("Signer " + (i + 1));
             signer.setRecipientId(String.valueOf(i + 1));
 
-            // Generate unique clientUserId for embedded signing
             String clientUserId = generateClientUserId(signerEmails.get(i), i + 1);
             signer.setClientUserId(clientUserId);
 
-            // Add signature field
             SignHere signHere = new SignHere();
             signHere.setDocumentId("1");
             signHere.setPageNumber("1");
@@ -73,7 +74,6 @@ public class DocumentService {
             signHere.setXPosition("100");
             signHere.setYPosition("100");
 
-            // Optional: Add date signed field
             DateSigned dateSigned = new DateSigned();
             dateSigned.setDocumentId("1");
             dateSigned.setPageNumber("1");
@@ -81,7 +81,6 @@ public class DocumentService {
             dateSigned.setXPosition("200");
             dateSigned.setYPosition("100");
 
-            // Set up all tabs
             Tabs tabs = new Tabs();
             tabs.setSignHereTabs(Arrays.asList(signHere));
             tabs.setDateSignedTabs(Arrays.asList(dateSigned));
@@ -90,16 +89,14 @@ public class DocumentService {
             signerList.add(signer);
         }
 
-        // Set up envelope
         envelopeDefinition.setDocuments(Arrays.asList(document));
         envelopeDefinition.setRecipients(new Recipients().signers(signerList));
         envelopeDefinition.setStatus("sent");
 
-        // Create envelope
         EnvelopesApi envelopesApi = new EnvelopesApi(apiClient);
         EnvelopeSummary envelopeSummary = envelopesApi.createEnvelope(accountId, envelopeDefinition);
 
-        // Create and save agreement record
+
         Agreement agreement = Agreement.builder()
                 .docuSignEnvelopeId(envelopeSummary.getEnvelopeId())
                 .status("SENT")
@@ -109,13 +106,15 @@ public class DocumentService {
     }
 
     public String createEmbeddedSigningUrl(String envelopeId, String signerEmail, String returnUrl) throws Exception {
+        String accessToken = tokenService.getAccessToken();
+        apiClient.addDefaultHeader("Authorization", "Bearer " + accessToken);
+
         EnvelopesApi envelopesApi = new EnvelopesApi(apiClient);
         Recipients recipients = envelopesApi.listRecipients(accountId, envelopeId);
 
         String clientUserId = null;
         String recipientId = null;
 
-        // Find the matching recipient
         for (Signer signer : recipients.getSigners()) {
             if (signer.getEmail().equals(signerEmail)) {
                 recipientId = signer.getRecipientId();
@@ -128,7 +127,6 @@ public class DocumentService {
             throw new RuntimeException("Signer not found for envelope");
         }
 
-        // Create recipient view request
         RecipientViewRequest viewRequest = new RecipientViewRequest();
         viewRequest.setReturnUrl(returnUrl);
         viewRequest.setAuthenticationMethod("email");
@@ -136,7 +134,6 @@ public class DocumentService {
         viewRequest.setUserName("Signer " + recipientId);
         viewRequest.setClientUserId(clientUserId);
 
-        // Get the signing URL
         ViewUrl results = envelopesApi.createRecipientView(accountId, envelopeId, viewRequest);
         return results.getUrl();
     }
@@ -159,12 +156,11 @@ public class DocumentService {
         Agreement agreement = agreementRepository.findByDocuSignEnvelopeId(envelopeId)
                 .orElseThrow(() -> new RuntimeException("Agreement not found for envelope: " + envelopeId));
 
-        // Update agreement status and signed date
+
         agreement.setStatus("SIGNED");
         agreement.setSignedDate(LocalDateTime.now());
         agreementRepository.save(agreement);
 
-        // Update first milestone status to IN_PROGRESS
         agreement.getMilestones().stream()
                 .min(Comparator.comparing(Milestone::getDueDate))
                 .ifPresent(milestone -> {
@@ -172,7 +168,6 @@ public class DocumentService {
                     milestoneRepository.save(milestone);
                 });
 
-        // Update obligations with nearest due dates to IN_PROGRESS
         agreement.getObligations().stream()
                 .filter(obligation -> obligation.getDueDate().isAfter(LocalDateTime.now()))
                 .min(Comparator.comparing(Obligation::getDueDate))
@@ -189,17 +184,15 @@ public class DocumentService {
         Agreement agreement = agreementRepository.findByDocuSignEnvelopeId(envelopeId)
                 .orElseThrow(() -> new RuntimeException("Agreement not found for envelope: " + envelopeId));
 
-        // Update agreement status
+
         agreement.setStatus("DECLINED");
         agreementRepository.save(agreement);
 
-        // Set all milestones to CANCELLED
         agreement.getMilestones().forEach(milestone -> {
             milestone.setStatus("CANCELLED");
             milestoneRepository.save(milestone);
         });
 
-        // Set all obligations to CANCELLED
         agreement.getObligations().forEach(obligation -> {
             obligation.setStatus("CANCELLED");
             obligationRepository.save(obligation);
